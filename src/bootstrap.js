@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
-import Isolated from "./Isolated";
+import Isolated from "./isolatedComponents/";
 import {RecoilRoot} from 'recoil'
 import { QueryClientProvider, QueryClient } from "react-query";
 

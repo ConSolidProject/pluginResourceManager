@@ -19,7 +19,8 @@ module.exports = {
       assert: require.resolve("assert/"),
       zlib: require.resolve("browserify-zlib"),
       events: require.resolve("events/"),
-      path: require.resolve("path-browserify")
+      path: require.resolve("path-browserify"),
+      url: require.resolve('url/')
     }
   },
     module: {
