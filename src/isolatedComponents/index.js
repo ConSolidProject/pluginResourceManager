@@ -14,6 +14,8 @@ import ChevronLeft from "@material-ui/icons/ChevronLeft";
 import { IconButton } from "@material-ui/core";
 // import Options from "../../../../consolid-react-ui/src/lib/components/Options";
 import { Options } from "consolid-react-ui";
+import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
+import { loadProjectMetadata } from "consolid";
 const packageJSON = require("../../package.json");
 
 export default function Isolated() {
@@ -67,13 +69,21 @@ function standaloneRunner(WrappedComponent, module) {
       setSelectionId,
       trigger,
       setTrigger,
-      store
+      store,
+      session: getDefaultSession()
     };
 
     const children = null;
     const inactive = false;
 
     const drawerWidth = 450
+
+    useEffect(() => {
+      if (projects.length > 0) {
+        loadProjectMetadata(projects[0], store, getDefaultSession()).then(() => console.log('loaded')).catch((err)=> console.log('err', err))
+      }
+    }, [trigger])
+
     return (
       <div>
        <IconButton

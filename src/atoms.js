@@ -9,7 +9,8 @@ const session = atom({
 
 const projects = atom({
     key: "projects",
-    default: []
+    // default: []
+    default: ["http://localhost:5000/jeroen/lbd/642f0417-ce23-4d9d-8806-c078aed93ae1/"]
 })
 
 const activeResources = atom({

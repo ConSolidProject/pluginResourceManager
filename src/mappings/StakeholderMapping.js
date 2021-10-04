@@ -3,14 +3,15 @@ import { getProjectResourcesByStakeholder } from "../functions";
 import { Typography } from "@material-ui/core";
 import ResourceOverview from "../components/ResourceOverview";
 import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
+
 export default function StakeholderMapping({ sharedProps }) {
-  const { projects, setActiveResources, activeResources } = sharedProps;
+  const { projects, setActiveResources, activeResources, trigger, session } = sharedProps;
   const [resources, setResources] = useState([])
   const project = projects[0]
 
   useEffect(() => {
-    getProjectResourcesByStakeholder(project, getDefaultSession()).then(res => setResources(res))
-  }, [activeResources])
+    getProjectResourcesByStakeholder(project, session).then(res => setResources(res))
+  }, [activeResources, trigger])
 
   return (
     <div>
@@ -22,6 +23,7 @@ export default function StakeholderMapping({ sharedProps }) {
               return (
                 <div key={res.metadata}>
                       <ResourceOverview
+                        session={session}
                         dataset={res}
                         activeResources={activeResources}
                         setActiveResources={setActiveResources}

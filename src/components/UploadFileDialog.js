@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -13,15 +13,16 @@ import {
 } from "@material-ui/core";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import mime from "mime-types";
-import { update, checkExistence, uploadResource, createResource } from "consolid";
-import { createGlobalArtefactsFromGltf } from "../functions";
+import { update, checkExistence, uploadResource, createResource, getMyProjectRepository } from "consolid";
+import { createGlobalArtefactsFromGltf, createGlobalArtefactsFromLbd } from "../functions";
+import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
 const typeExtensions = {
   graph: ["ttl", "rdf"],
   ifc: ["ifc"],
 };
 
 const UploadFileDialog = (props) => {
-  const { session, currentProject } = props;
+  const { project, setTrigger, store} = props;
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(null);
   const [label, setLabel] = useState("");
@@ -35,7 +36,8 @@ const UploadFileDialog = (props) => {
     e.preventDefault();
     console.log(`e.target.files[0]`, e.target.files[0]);
     let mimeType = mime.lookup(e.target.files[0].name);
-    if (mimeType = "model/gltf+json") {
+    console.log(`mimeType`, mimeType)
+    if (mimeType === "model/gltf+json" || mimeType === "text/turtle") {
       setGltfQuestion(true);
     }
     setFile(e.target.files[0]);
@@ -43,7 +45,9 @@ const UploadFileDialog = (props) => {
 
   async function uploadInput() {
     try {
+      const session = getDefaultSession()
       setLoading(true);
+      const myProjectUrl = await getMyProjectRepository(project, session)
       // naive assumption that there are no other "." in the filename. Does not really matter anyway
       const datasetName = file.name.split(".")[0];
       let mimeType = mime.lookup(file.name);
@@ -54,53 +58,57 @@ const UploadFileDialog = (props) => {
 
       // check if resource with this name already exists
       const exists = await checkExistence(
-        `${props.currentProject.local}/${file.name}`,
+        `${myProjectUrl}${file.name}`,
         session
       );
       if (exists) {
         throw Error("A resource with this name already exists!");
       }
       // create and upload metadata file
-      const metaResource = `${props.currentProject.local}/${file.name}.props.ttl`;
+      const metaResource = `${myProjectUrl}${file.name}.props.ttl`;
       const query = `  
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
   
     INSERT DATA {
-      <${
-        props.currentProject.local
-      }${datasetName}> a <http://www.w3.org/ns/dcat#Dataset> ;
+      <${myProjectUrl}${datasetName}> a <http://www.w3.org/ns/dcat#Dataset> ;
       <http://purl.org/dc/terms/title> "${description}"@en ;
       <http://www.w3.org/ns/dcat#keyword> "${label}"@en ;
       <http://purl.org/dc/terms/creator> <${session.info.webId}> ;
       <http://purl.org/dc/terms/issued> "${new Date().toISOString()}"^^xsd:dateTime ;
       <http://purl.org/dc/terms/modified> "${new Date().toISOString()}"^^xsd:dateTime ;
-      <http://www.w3.org/ns/dcat#distribution> <${props.currentProject.local}${file.name}>.
+      <http://www.w3.org/ns/dcat#distribution> <${myProjectUrl}${file.name}>.
 
-  <${props.currentProject.local}${file.name}> a <http://www.w3.org/ns/dcat#Distribution>;
+  <${myProjectUrl}${file.name}> a <http://www.w3.org/ns/dcat#Distribution>;
       <http://purl.org/dc/terms/title> "${mimeType} distribution of dataset: ${description}";
-      <http://www.w3.org/ns/dcat#downloadURL> <${props.currentProject.local}${file.name}>;
+      <http://www.w3.org/ns/dcat#downloadURL> <${myProjectUrl}${file.name}>;
       <http://www.w3.org/ns/dcat#mediaType> <https://www.iana.org/assignments/media-types/${mimeType}> .
     }`;
 
       await update(query, metaResource, session);
       await uploadResource(
-        `${props.currentProject.local}${file.name}`,
+        `${myProjectUrl}${file.name}`,
         file,
         { mimeType },
         session
       );
-        const linkElementResource = `${props.currentProject.local}${file.name}.linkelements.ttl`
-        const q3 = `
-        INSERT DATA {
-          <${props.currentProject.local}${file.name}> <https://lbdserver.org/vocabulary#hasLinkElementRegistry> <${linkElementResource}> .
-        }`
-        await update(q3, metaResource, session)
-        await createResource(linkElementResource, {mimeType: "text/turtle"}, session);
+      //   const linkElementResource = `${myProjectUrl}${file.name}.linkelements.ttl`
+      //   const q3 = `
+      //   INSERT DATA {
+      //     <${myProjectUrl}${file.name}> <https://lbdserver.org/vocabulary#hasLinkElementRegistry> <${linkElementResource}> .
+      //   }`
+      //   await update(q3, metaResource, session)
+      //   await createResource(linkElementResource, {mimeType: "text/turtle"}, session);
 
 
       if (gltfQuestion && gltfChecked) {
-        await createGlobalArtefactsFromGltf(currentProject, `${props.currentProject.local}${file.name}`, linkElementResource, session)
+        console.log("making artefacts")
+        if (mimeType === "model/gltf+json") {
+          await createGlobalArtefactsFromGltf(`${myProjectUrl}${file.name}`, myProjectUrl + "artefactRegistry.ttl", store, project, session)
+        } else  if (mimeType === "text/turtle") {
+          await createGlobalArtefactsFromLbd(`${myProjectUrl}${file.name}`, myProjectUrl + "artefactRegistry.ttl", store, project, session)
+        }
       }
+      setTrigger(t => t+1)
       setLoading(false);
 
       props.onClose()
@@ -156,7 +164,7 @@ const UploadFileDialog = (props) => {
                   color="primary"
                 />
               }
-              label="Create global identifiers for GLTF"
+              label="Create global identifiers for GLTF or LBD"
             />
           ) : (
             <p></p>
