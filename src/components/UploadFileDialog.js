@@ -22,7 +22,7 @@ const typeExtensions = {
 };
 
 const UploadFileDialog = (props) => {
-  const { project, setTrigger, store} = props;
+  const { project, setTrigger, store, session} = props;
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(null);
   const [label, setLabel] = useState("");
@@ -45,7 +45,6 @@ const UploadFileDialog = (props) => {
 
   async function uploadInput() {
     try {
-      const session = getDefaultSession()
       setLoading(true);
       const myProjectUrl = await getMyProjectRepository(project, session)
       // naive assumption that there are no other "." in the filename. Does not really matter anyway

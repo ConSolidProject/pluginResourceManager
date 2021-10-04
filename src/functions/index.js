@@ -8,6 +8,7 @@ import {
   update,
   executeQuery,
   loadProjectMetadata,
+  getMyArtefactRegistry
 } from "consolid";
 import { v4 } from "uuid";
 import mime from "mime-types";
@@ -92,6 +93,7 @@ async function findDistribution(metadata, myEngine, session) {
 
 async function alignGltfAndLbd(sources, session, store, project) {
   try {
+    const ar = await getMyArtefactRegistry(session, project)
     const gltfResources = sources.filter((res) =>
       mime.lookup(res.main).endsWith("model/gltf+json")
     );
@@ -141,7 +143,7 @@ async function alignGltfAndLbd(sources, session, store, project) {
           ?le lbd:hasDocument <${lbd.main}> ; lbd:hasIdentifier ?ident . 
           ?ident lbd:identifier <${element}> .
         }`;
-            const artRes = await myEngine.query(q3, { sources: [store] });
+            const artRes = await myEngine.query(q3, { sources: [lbd.artefactRegistry, model.artefactRegistry] });
             const artResBindings = await artRes.bindings();
             for (const bi of artResBindings) {
               const artefact = bi.get("?artefact").value;
@@ -155,11 +157,11 @@ async function alignGltfAndLbd(sources, session, store, project) {
           }
           updateLBDAR += "}";
 
-          await update(updateLBDAR, lbd.artefactRegistry, session);
+          await update(updateLBDAR, ar, session);
         }
       }
       updateModelAR += "}";
-      await update(updateModelAR, model.artefactRegistry, session);
+      await update(updateModelAR, ar, session);
       await loadProjectMetadata(project, store, session);
       return;
     }

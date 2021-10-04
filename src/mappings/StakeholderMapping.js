@@ -5,7 +5,7 @@ import ResourceOverview from "../components/ResourceOverview";
 import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
 
 export default function StakeholderMapping({ sharedProps }) {
-  const { projects, setActiveResources, activeResources, trigger, session } = sharedProps;
+  const { projects, setActiveResources, activeResources, trigger, setTrigger, session, store} = sharedProps;
   const [resources, setResources] = useState([])
   const project = projects[0]
 
@@ -24,7 +24,10 @@ export default function StakeholderMapping({ sharedProps }) {
                 <div key={res.metadata}>
                       <ResourceOverview
                         session={session}
+                        project={project}
                         dataset={res}
+                        setTrigger={setTrigger}
+                        store={store}
                         activeResources={activeResources}
                         setActiveResources={setActiveResources}
                       />

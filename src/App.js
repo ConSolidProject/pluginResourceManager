@@ -124,6 +124,7 @@ export default (props) => {
               store={store}
               open={upload}
               project={project}
+              session={session}
             ></UploadFileDialog>
           </div>
         ) : (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import {
   FormControl,
   FormGroup,
@@ -9,10 +9,20 @@ import {
   Item
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
-import { deleteResource } from "consolid";
+import SyncIcon from '@material-ui/icons/Sync';
+import { deleteResource, getAccessRights } from "consolid";
+import mime from "mime-types";
+import { createGlobalArtefactsFromGltf, createGlobalArtefactsFromLbd } from "../functions";
+
 export default function ResourceOverview(props) {
-  const { dataset, setActiveResources, activeResources, session } = props;
+  const { dataset, setActiveResources, activeResources, session, setTrigger, store, project } = props;
   const { artefactRegistry, accessRights, metadata, main } = dataset;
+  const [artAccess, setArtAccess] = useState([])
+
+  useEffect(() => {
+    getAccessRights(artefactRegistry, session).then(a => setArtAccess(a))
+  }, [])
+
   function handleChange(e) {
     const ar = activeResources.map((r) => r.main);
     if (!ar.includes(main)) {
@@ -26,12 +36,21 @@ export default function ResourceOverview(props) {
   }
 
   async function onDeleteClick() {
-    console.log(`dataset`, dataset);
     await deleteResource(dataset, session);
     const newArray = activeResources.filter((value, i, arr) => {
       return value.main !== main;
     });
     setActiveResources(newArray);
+  }
+
+  async function syncWithArtReg() {
+    const mimeType = mime.lookup(main)
+    if (mimeType === "model/gltf+json") {
+      await createGlobalArtefactsFromGltf(main, artefactRegistry, store, project, session)
+    } else  if (mimeType === "text/turtle") {
+      await createGlobalArtefactsFromLbd(main, artefactRegistry, store, project, session)
+    }
+    setTrigger(t => t+ 1)
   }
 
   return (
@@ -59,7 +78,7 @@ export default function ResourceOverview(props) {
             </FormControl>
         </Grid>
 
-        <Grid item xs={4}>
+        <Grid item xs={2}>
             {" "}
             {accessRights.includes("write") ? (
               <IconButton
@@ -70,6 +89,22 @@ export default function ResourceOverview(props) {
                 onClick={onDeleteClick}
               >
                 <DeleteIcon />
+              </IconButton>
+            ) : (
+              <></>
+            )}
+        </Grid>
+        <Grid item xs={2}>
+            {" "}
+            {artAccess.includes("write") ? (
+              <IconButton
+                style={{bottom: 5}}
+                color="primary"
+                aria-label="upload picture"
+                component="span"
+                onClick={syncWithArtReg}
+              >
+                <SyncIcon />
               </IconButton>
             ) : (
               <></>
