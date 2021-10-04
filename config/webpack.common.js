@@ -88,14 +88,14 @@ module.exports = {
     symlinks: false,
     modules: [
       'node_modules',
-      'app',
-      // provide absolute path to the main node_modules,
-      // to avoid webpack searching around and getting confused
-      // see https://webpack.js.org/configuration/resolve/#resolve-modules
-      path.resolve('node_modules'),
-      // include linked node_modules as fallback, in case the deps haven't
-      // yet propagated to the main node_modules
-      ...findLinkedModules(path.resolve('node_modules')),
+      // 'app',
+      // // provide absolute path to the main node_modules,
+      // // to avoid webpack searching around and getting confused
+      // // see https://webpack.js.org/configuration/resolve/#resolve-modules
+      // path.resolve('node_modules'),
+      // // include linked node_modules as fallback, in case the deps haven't
+      // // yet propagated to the main node_modules
+      // ...findLinkedModules(path.resolve('node_modules')),
     ],
     fallback: {
       crypto: require.resolve("crypto-browserify"),
@@ -113,9 +113,9 @@ module.exports = {
       fs: require.resolve("browserify-fs"),
       dgram: require.resolve("dgram-browserify"),
     },
-    alias: {
-      consolid: "/home/jmauwerb/Documents/LBDserver/consolid"
-    }
+    // alias: {
+    //   consolid: "/home/jmauwerb/Documents/LBDserver/consolid"
+    // }
   },
   module: {
     rules: [
