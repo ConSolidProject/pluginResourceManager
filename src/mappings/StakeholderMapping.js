@@ -1,38 +1,67 @@
 import React, { useEffect, useState } from "react";
-import { getProjectResourcesByStakeholder } from "../functions";
 import { Typography } from "@material-ui/core";
 import ResourceOverview from "../components/ResourceOverview";
-import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
+import { getDataset } from "consolid";
 
 export default function StakeholderMapping({ sharedProps }) {
-  const { projects, setActiveResources, activeResources, trigger, setTrigger, session, store} = sharedProps;
-  const [resources, setResources] = useState([])
-  const project = projects[0]
-
+  const {
+    projects,
+    setDatasets,
+    datasets,
+    trigger,
+    setTrigger,
+    session,
+    store,
+  } = sharedProps;
+  // const [stakeholders, setStakeholders] = useState([]);
+  const [project, setProject] = useState(projects[Object.keys(projects)[0]])
   useEffect(() => {
-    getProjectResourcesByStakeholder(project, session).then(res => setResources(res))
-  }, [activeResources, trigger])
+    const project = projects[Object.keys(projects)[0]]
+    console.log("fetching datasets again!")
+    async function getProjectAndDatasets() {
+      // const guid = project.split("/")[project.split("/").length - 2];
+      // const data = await getProjectData(guid, session).then((res => res.json()))
+      // setStakeholders(() => data);
+      // console.log(`datasets`, datasets)
+          const dset = {}
+          for (const st of Object.keys(project)) {
+            for (const dataset of project[st].ds.datasets) {
+              console.log(`dataset`, dataset)
+              if (!datasets[dataset]) {
+                const ds = await getDataset(dataset, session)
+                dset[dataset] = ds
+              }
+
+            }
+          }
+          setDatasets(prev => {return {...dset, ...prev}})
+    }
+
+    getProjectAndDatasets()
+  }, [projects]);
 
   return (
     <div>
-      {Object.keys(resources).map((item) => {
+      {Object.keys(project).map((item) => {
         return (
-          <div style={{marginBottom: 20}} key={item}>
+          <div style={{ marginBottom: 20 }} key={item}>
             <Typography>{item}: </Typography>
-            {resources[item].map((res) => {
-              return (
-                <div key={res.metadata}>
-                      <ResourceOverview
-                        session={session}
-                        project={project}
-                        dataset={res}
-                        setTrigger={setTrigger}
-                        store={store}
-                        activeResources={activeResources}
-                        setActiveResources={setActiveResources}
-                      />
-                </div>
-              );
+            {Object.keys(datasets).map((l) => {
+              if (datasets[l]) {
+                return (
+                  <ResourceOverview
+                    key={l}
+                    name={l}
+                    session={session}
+                    project={project}
+                    dataset={datasets[l]}
+                    setTrigger={setTrigger}
+                    setDatasets={setDatasets}
+                  />
+                );
+              }
+
+              // return <p>{l.split("/")[l.split('/').length -1]}</p>
             })}
           </div>
         );

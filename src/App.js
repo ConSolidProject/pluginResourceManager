@@ -9,15 +9,25 @@ import {
   Button,
   InputLabel,
   FormControl,
+  FormControlLabel,
+  FormGroup,
+  Switch,
+  Grid,
   FormHelperText,
   Typography,
 } from "@material-ui/core";
+import { v4 } from "uuid";
 import UploadFileDialog from "./components/UploadFileDialog";
-import { StakeholderMapping } from "./mappings";
+// import { StakeholderMapping } from "./mappings";
 import getICDD from "./functions/getICDD";
 import { alignGltfAndLbd, alignGuids } from "./functions";
 import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
-import { getMyProjectRepository } from "consolid";
+import { getProject } from "consolid";
+import { getLdpMembers, queryComunica } from "consolid";
+import { QueryClient, QueryClientProvider, useQuery } from "react-query";
+import { getDatasetsOfPartial } from "consolid";
+
+const queryClient = new QueryClient();
 const packageJSON = require("../package.json");
 
 const generateClassname = createGenerateClassName({
@@ -26,73 +36,77 @@ const generateClassname = createGenerateClassName({
 });
 
 export default (props) => {
-  const [mapping, setMapping] = useState("stakeholder");
+  if (props.inactive) return <></>;
+  return (
+    <StylesProvider generateClassName={generateClassname}>
+      <QueryClientProvider client={queryClient}>
+        <Insertion {...props} />
+      </QueryClientProvider>
+    </StylesProvider>
+  );
+};
+
+function Insertion(props) {
   const [upload, setUpload] = useState(false);
-  const [icddReady, setIcddReady] = useState();
   const [loading, setLoading] = useState(false);
-  const [icddUrl, setIcddUrl] = useState();
   const { sharedProps, inactive } = props;
-  const { projects, setTrigger, trigger, store, activeResources, session} = sharedProps;
-  const project = projects[0];
+  const {
+    projects,
+    setProjects,
+    setTrigger,
+    trigger,
+    store,
+    datasets,
+    setDatasets,
+    session,
+  } = sharedProps;
+  const { isLoading, isError, data, error } = useQuery(
+    "stakeholders",
+    async () => await getStakeholders(projects[0], session)
+  );
 
-  function selectMapping() {
-    switch (mapping) {
-      case "stakeholder":
-        // return <p>test</p>
-        return <StakeholderMapping sharedProps={sharedProps} />;
-      default:
-        break;
-    }
-  }
 
-  // async function bundleIcdd() {
-  //   const content = await getICDD(project, getDefaultSession())
-  //   const link = document.createElement('a');
-  //   link.href = window.URL.createObjectURL(content);
-  //   link.download = `${project}.icdd`;
-  //   setIcddUrl(link)
-  //   setIcddReady(true)
-  // }
 
   async function alignResources() {
     try {
-
       setLoading(true);
-      await alignGltfAndLbd(activeResources, session, store, project);
+      // await alignGltfAndLbd(datasets, session, store, project);
       setLoading(false);
     } catch (error) {
       setLoading(false);
     }
   }
 
-  if (props.inactive) return <></>;
-  return (
-    <StylesProvider generateClassName={generateClassname}>
-      <h3 style={{ margin: 10 }}>Resource overview</h3>
-      {/* <Button color="primary" onClick={(e) => console.log(projects)}>LOG</Button> */}
+  async function getStakeholders(p, s) {
+    const partials = await getLdpMembers(p, s);
+    const st = [];
+    for (const partial of partials) {
+      try {
+        const res = await queryComunica(
+          `select ?i where {?p <http://purl.org/dc/terms/creator> ?i}`,
+          [partial],
+          { results: true, single: true, variable: "i" },
+          s
+        );
+        st.push({ stakeholder: res, url: partial });
+      } catch (error) {
+        console.log(`error`, error);
+      }
+    }
+    return st;
+  }
 
-      {/* <Button color="primary" onClick={(e) => alignGuids(getDefaultSession())}>CONVERT</Button> */}
-      <FormControl style={{ margin: 20 }}>
-        <InputLabel id="demo-simple-select-helper-label">Mapping</InputLabel>
-        <Select
-          labelId="demo-simple-select-helper-label"
-          id="demo-simple-select-helper"
-          value={mapping}
-          onChange={(e) => setMapping(e.target.value)}
-        >
-          <MenuItem value={"stakeholder"}>Stakeholder</MenuItem>
-        </Select>
-        <FormHelperText>
-          Choose how project resources should be organised
-        </FormHelperText>
-      </FormControl>
-      <hr />
-      <div />
-      {selectMapping()}
+  return (
+    <div>
+      <h3 style={{ margin: 10 }}>Resource overview</h3>
       <div>
-        {/* <Typography variant="body1">
-          Sub-document identifiers can be aligned with those of other documents. Alignment enables LBDserver plugins to 'know' which sub-document identifiers correspond with one another, and hence allow visualisation, querying and checking of the entire set of identifiers. Whether alignment can be done automatically or manually depends on the algorithms used. As for this demo, we only have an automatic alignment for glTF/LBD.ttl documents derived from IFC files. You can use <a target="_blank" href="http://lbdserver.org/convertor">this service</a> to convert an IFC files to various formats. Select these in the resource overview and press the Align button.
-        </Typography> */}
+        {data &&
+          data.map((item) => {
+           return <div>
+             <h4 style={{marginLeft: 15}}>{item.stakeholder}:</h4>
+             <StakeholderOverview key={item.url} {...sharedProps} {...item} />
+             </div>
+          })}
       </div>
       <div>
         {session.info.isLoggedIn ? (
@@ -119,23 +133,78 @@ export default (props) => {
             <UploadFileDialog
               onClose={async () => {
                 setUpload(false);
+                // const projectId = project[session.info.webId].id;
+                // const detail = await getProject(projectId, session, {});
+                // setProjects((proj) => {
+                //   return { ...proj, [project]: detail };
+                // });
+                // setTrigger(v4());
               }}
-              setTrigger={setTrigger}
-              store={store}
               open={upload}
-              project={project}
+              project={projects[0]}
               session={session}
+              setDatasets={setDatasets}
             ></UploadFileDialog>
           </div>
         ) : (
           <></>
         )}
       </div>
-      {/* <div>
-              <Button variant="contained" color="primary" style={{margin: 10, position: "fixed", bottom: 10, left: 170}} onClick={async (e) => {if (!icddReady) {await bundleIcdd()} else {
-                icddUrl.click()
-              }}}>{icddReady ? "Download ICDD" : "ICDD dump"}</Button>
-        </div> */}
-    </StylesProvider>
+    </div>
   );
-};
+}
+
+function StakeholderOverview(props) {
+  const {
+    datasets,
+    setDatasets,
+    session,
+  } = props;
+    const {
+    isLoading,
+    isError,
+    data,
+    refetch,
+    error,
+  } = useQuery(
+    "datasets",
+    async () => await getDatasetsOfPartial(props.url, session)
+  );
+
+  useEffect(() => {
+    refetch()
+  }, [datasets])
+
+  function handleChange(item) {
+    if (datasets.includes(item.url)) {
+      const d = datasets.filter(o => o !== item.url)
+      setDatasets(d)
+    } else {
+      setDatasets(o => [...o, item.url])
+    }
+  }
+  return (
+    <Grid style={{marginLeft: 30}} container spacing={2}>      {data && data.map((i) => {
+        return (
+          <Grid item xs={8}>
+          <FormControl key={i.url}>
+            <FormGroup>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={datasets.includes(i.url)}
+                      onChange={(e) => handleChange(i)}
+                      color="primary"
+                    />
+                  }
+                  color="primary"
+                  label={i.title}
+                />
+            </FormGroup>
+          </FormControl>
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
+}

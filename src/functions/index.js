@@ -91,94 +91,88 @@ async function findDistribution(metadata, myEngine, session) {
   }
 }
 
-async function alignGltfAndLbd(sources, session, store, project) {
-  try {
-    const ar = await getMyArtefactRegistry(session, project)
-    const gltfResources = sources.filter((res) =>
-      mime.lookup(res.main).endsWith("model/gltf+json")
-    );
-    const lbdResources = sources.filter((res) =>
-      mime.lookup(res.main).endsWith("text/turtle")
-    );
-    const myEngine = newEngine();
-    for (const model of gltfResources) {
-      // query artefactRegistry
-      const q1 = `  PREFIX lbd: <https://lbdserver.org/vocabulary#>
-  SELECT ?id ?art WHERE {
-    ?art lbd:hasLinkElement ?le .
-    ?le lbd:hasIdentifier ?ident ; lbd:hasDocument <${model.main}>.
-    ?ident lbd:identifier ?id .
-  }`;
+// async function alignGltfAndLbd(sources, session, store, project) {
+//   try {
+//     const ar = await getMyArtefactRegistry(session, project)
+//     const gltfResources = sources.filter((res) =>
+//       mime.lookup(res.main).endsWith("model/gltf+json")
+//     );
+//     const lbdResources = sources.filter((res) =>
+//       mime.lookup(res.main).endsWith("text/turtle")
+//     );
+//     const myEngine = newEngine();
+//     for (const model of gltfResources) {
+//       // query artefactRegistry
+//       const q1 = `  PREFIX lbd: <https://lbdserver.org/vocabulary#>
+//   SELECT ?id ?art WHERE {
+//     ?art lbd:hasLinkElement ?le .
+//     ?le lbd:hasIdentifier ?ident ; lbd:hasDocument <${model.main}>.
+//     ?ident lbd:identifier ?id .
+//   }`;
 
-      const updateModelAR = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
-  INSERT DATA { `;
+//       const updateModelAR = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+//   INSERT DATA { `;
 
-      const res = await myEngine.query(q1, {
-        sources: [...gltfResources.map((e) => e.artefactRegistry)],
-      });
-      const bindings = await res.bindings();
-      for (const binding of bindings) {
-        for (const lbd of lbdResources) {
-          const updateLBDAR = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
-      INSERT DATA {`;
+//       const res = await myEngine.query(q1, {
+//         sources: [...gltfResources.map((e) => e.artefactRegistry)],
+//       });
+//       const bindings = await res.bindings();
+//       for (const binding of bindings) {
+//         for (const lbd of lbdResources) {
+//           const updateLBDAR = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+//       INSERT DATA {`;
 
-          const art = binding.get("?art").value;
-          const id = binding.get("?id").value;
-          const q2 = `
-      prefix schema: <http://schema.org/> 
-      prefix props: <https://w3id.org/props#>
+//           const art = binding.get("?art").value;
+//           const id = binding.get("?id").value;
+//           const q2 = `
+//       prefix schema: <http://schema.org/> 
+//       prefix props: <https://w3id.org/props#>
     
-      select ?element 
-      where 
-      { ?element props:globalIdIfcRoot ?root .
-        ?root schema:value "${id}" .
-      }`;
-          const lbdRes = await executeQuery(q2, [lbd.main], session);
-          const bindingLBD = await lbdRes.bindings();
-          for (const b of bindingLBD) {
-            const element = b.get("?element").value;
-            const q3 = `  PREFIX lbd: <https://lbdserver.org/vocabulary#>
-        SELECT ?artefact WHERE {
-          ?artefact lbd:hasLinkElement ?le .
-          ?le lbd:hasDocument <${lbd.main}> ; lbd:hasIdentifier ?ident . 
-          ?ident lbd:identifier <${element}> .
-        }`;
-            const artRes = await myEngine.query(q3, { sources: [lbd.artefactRegistry, model.artefactRegistry] });
-            const artResBindings = await artRes.bindings();
-            for (const bi of artResBindings) {
-              const artefact = bi.get("?artefact").value;
-              const updateQ = `
-            <${artefact}> owl:sameAs <${art}> .
-            <${art}> owl:sameAs <${artefact}> .
-          `;
-              updateModelAR += updateQ;
-              updateLBDAR += updateQ;
-            }
-          }
-          updateLBDAR += "}";
+//       select ?element 
+//       where 
+//       { ?element props:globalIdIfcRoot ?root .
+//         ?root schema:value "${id}" .
+//       }`;
+//           const lbdRes = await executeQuery(q2, [lbd.main], session);
+//           const bindingLBD = await lbdRes.bindings();
+//           for (const b of bindingLBD) {
+//             const element = b.get("?element").value;
+//             const q3 = `  PREFIX lbd: <https://lbdserver.org/vocabulary#>
+//         SELECT ?artefact WHERE {
+//           ?artefact lbd:hasLinkElement ?le .
+//           ?le lbd:hasDocument <${lbd.main}> ; lbd:hasIdentifier ?ident . 
+//           ?ident lbd:identifier <${element}> .
+//         }`;
+//             const artRes = await myEngine.query(q3, { sources: [lbd.artefactRegistry, model.artefactRegistry] });
+//             const artResBindings = await artRes.bindings();
+//             for (const bi of artResBindings) {
+//               const artefact = bi.get("?artefact").value;
+//               const updateQ = `
+//             <${artefact}> owl:sameAs <${art}> .
+//             <${art}> owl:sameAs <${artefact}> .
+//           `;
+//               updateModelAR += updateQ;
+//               updateLBDAR += updateQ;
+//             }
+//           }
+//           updateLBDAR += "}";
 
-          await update(updateLBDAR, ar, session);
-        }
-      }
-      updateModelAR += "}";
-      await update(updateModelAR, ar, session);
-      await loadProjectMetadata(project, store, session);
-      return;
-    }
-  } catch (error) {
-    console.log(`error`, error);
-  }
-}
+//           await update(updateLBDAR, ar, session);
+//         }
+//       }
+//       updateModelAR += "}";
+//       await update(updateModelAR, ar, session);
+//       await loadProjectMetadata(project, store, session);
+//       return;
+//     }
+//   } catch (error) {
+//     console.log(`error`, error);
+//   }
+// }
 
-async function alignGuids(session, project, resources, store) {
+async function alignGuids(session, project, gltfResource, graph, store) {
   const myEngine = newEngine();
-  const gltfResource =
-    "http://localhost:5000/jeroen/lbd/642f0417-ce23-4d9d-8806-c078aed93ae1/architectural_duplex.gltf";
-  const ttlSource =
-    "http://localhost:5000/jeroen/lbd/642f0417-ce23-4d9d-8806-c078aed93ae1/architectural_duplex.ttl";
-  const locRegistry =
-    "http://localhost:5000/jeroen/lbd/642f0417-ce23-4d9d-8806-c078aed93ae1/artefactRegistry.ttl";
-
+  const locRegistry = await findReferenceRegistry(project, session)
     
   const gltfRes = await session.fetch(gltfResource);
   const gltf = await gltfRes.json();
@@ -415,5 +409,5 @@ export {
   alignGuids,
   createGlobalArtefactsFromGltf,
   createGlobalArtefactsFromLbd,
-  alignGltfAndLbd,
+  // alignGltfAndLbd,
 };

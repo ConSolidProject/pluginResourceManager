@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import App from "../App";
 import {
   projects as p,
-  activeResources as sel,
+  datasets as sel,
   selectedElements as se,
   selectionId as sId,
   store as st,
@@ -15,7 +15,7 @@ import { IconButton } from "@material-ui/core";
 // import Options from "../../../../consolid-react-ui/src/lib/components/Options";
 import { Options } from "consolid-react-ui";
 import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
-import { loadProjectMetadata } from "consolid";
+// import { loadProjectMetadata } from "consolid";
 const packageJSON = require("../../package.json");
 
 export default function Isolated() {
@@ -40,9 +40,7 @@ export default function Isolated() {
   return (
     <div style={{ width: module.dimensions.w, height: module.dimensions.h }}>
       <RecoilRoot>
-        <QueryClientProvider client={new QueryClient()}>
           <Application module={module} />
-        </QueryClientProvider>
       </RecoilRoot>
     </div>
   );
@@ -51,7 +49,7 @@ export default function Isolated() {
 function standaloneRunner(WrappedComponent, module) {
   return function Wrapped() {
     const [openOptions, setOpenOptions] = useState(true)
-    const [activeResources, setActiveResources] = useRecoilState(sel);
+    const [datasets, setDatasets] = useRecoilState(sel);
     const [selectedElements, setSelectedElements] = useRecoilState(se);
     const [projects, setProjects] = useRecoilState(p);
     const [selectionId, setSelectionId] = useRecoilState(sId);
@@ -61,8 +59,8 @@ function standaloneRunner(WrappedComponent, module) {
     const sharedProps = {
       projects,
       setProjects,
-      activeResources,
-      setActiveResources,
+      datasets,
+      setDatasets,
       selectedElements,
       setSelectedElements,
       selectionId,
@@ -78,11 +76,11 @@ function standaloneRunner(WrappedComponent, module) {
 
     const drawerWidth = 450
 
-    useEffect(() => {
-      if (projects.length > 0) {
-        loadProjectMetadata(projects[0], store, getDefaultSession()).then(() => console.log('loaded')).catch((err)=> console.log('err', err))
-      }
-    }, [trigger])
+    // useEffect(() => {
+    //   if (projects.length > 0) {
+    //     loadProjectMetadata(projects[0], store, getDefaultSession()).then(() => console.log('loaded')).catch((err)=> console.log('err', err))
+    //   }
+    // }, [trigger])
 
     return (
       <div>
@@ -103,7 +101,7 @@ function standaloneRunner(WrappedComponent, module) {
           setProjects={setProjects}
           store={store}
         />{" "}
-        {(projects.length > 0) ? (
+        {(Object.keys(projects).length > 0) ? (
         <WrappedComponent
           sharedProps={sharedProps}
           module={module}

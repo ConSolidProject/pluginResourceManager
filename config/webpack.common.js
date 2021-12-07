@@ -102,7 +102,7 @@ module.exports = {
       stream: require.resolve("stream-browserify"),
       util: require.resolve("util/"),
       process: require.resolve("process/browser"),
-      buffer: require.resolve("buffer/"),
+      buffer: require.resolve("buffer"),
       os: require.resolve("os-browserify/browser"),
       assert: require.resolve("assert/"),
       zlib: require.resolve("browserify-zlib"),
@@ -112,10 +112,7 @@ module.exports = {
       http: require.resolve("stream-http"),
       fs: require.resolve("browserify-fs"),
       dgram: require.resolve("dgram-browserify"),
-    },
-    // alias: {
-    //   consolid: "/home/jmauwerb/Documents/LBDserver/consolid"
-    // }
+    }
   },
   module: {
     rules: [
@@ -141,7 +138,10 @@ module.exports = {
       }),
       new webpack.ProvidePlugin({
         stream: "stream-browserify",
-      })
+      }),
+      new webpack.ProvidePlugin({
+        Buffer: ['buffer', 'Buffer'],
+    }),
     ],
 
 };
