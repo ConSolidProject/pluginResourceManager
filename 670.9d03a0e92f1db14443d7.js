@@ -1,0 +1,1 @@
+(self.webpackChunkresourcemanager=self.webpackChunkresourcemanager||[]).push([[670],{97670:()=>{}}]);
