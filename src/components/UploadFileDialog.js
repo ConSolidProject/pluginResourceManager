@@ -49,7 +49,7 @@ const UploadFileDialog = (props) => {
 
   const { isLoading, isError, data, error } = useQuery(
     "datasets",
-    async () => await getDatasetsOfPartial(project + "/local/", session)
+    async () => await getDatasetsOfPartial(project + "local/", session)
   );
 
   function handleInput(e) {

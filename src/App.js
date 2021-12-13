@@ -81,6 +81,7 @@ function Insertion(props) {
     const partials = await getLdpMembers(p, s);
     const st = [];
     for (const partial of partials) {
+      console.log(`partial`, partial)
       try {
         const res = await queryComunica(
           `select ?i where {?p <http://purl.org/dc/terms/creator> ?i}`,
@@ -167,7 +168,7 @@ function StakeholderOverview(props) {
     refetch,
     error,
   } = useQuery(
-    "datasets",
+    `${props.url}_datasets`,
     async () => await getDatasetsOfPartial(props.url, session)
   );
 
@@ -177,10 +178,14 @@ function StakeholderOverview(props) {
 
   function handleChange(item) {
     if (datasets.includes(item.url)) {
+      console.log("filter out")
       const d = datasets.filter(o => o !== item.url)
       setDatasets(d)
     } else {
+      console.log("filter in")
+
       setDatasets(o => [...o, item.url])
+      console.log(`[...o, item.url]`, [...o, item.url])
     }
   }
   return (
