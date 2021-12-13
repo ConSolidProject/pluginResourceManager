@@ -13,7 +13,7 @@ import { QueryClientProvider, QueryClient } from "react-query";
 import ChevronLeft from "@material-ui/icons/ChevronLeft";
 import { IconButton } from "@material-ui/core";
 // import Options from "../../../../consolid-react-ui/src/lib/components/Options";
-import { Options } from "consolid-react-ui";
+// import { Options } from "consolid-react-ui";
 import { getDefaultSession } from "@inrupt/solid-client-authn-browser";
 // import { loadProjectMetadata } from "consolid";
 const packageJSON = require("../../package.json");
@@ -92,7 +92,7 @@ function standaloneRunner(WrappedComponent, module) {
       >
         {openOptions ? <></> : <ChevronLeft />}
       </IconButton>
-        <Options
+        {/* <Options
           openOptions={openOptions}
           setOpenOptions={setOpenOptions}
           trigger={trigger}
@@ -100,7 +100,7 @@ function standaloneRunner(WrappedComponent, module) {
           projects={projects}
           setProjects={setProjects}
           store={store}
-        />{" "}
+        />{" "} */}
         {(Object.keys(projects).length > 0) ? (
         <WrappedComponent
           sharedProps={sharedProps}
